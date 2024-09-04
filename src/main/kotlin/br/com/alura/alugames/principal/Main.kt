@@ -1,58 +1,86 @@
-package org.example
+package org.example.br.com.alura.alugames.principal
 
-import com.google.gson.Gson
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse.BodyHandlers
-import java.util.Scanner
+import br.com.alura.alugames.modelo.Gamer
+import br.com.alura.alugames.servicos.ConsumoApi
+import org.example.br.com.alura.alugames.modelo.Jogo
+import transformarEmIdade
+import java.util.*
 
 
 fun main() {
     val leitura = Scanner(System.`in`)
-    println("Digite o código de jogo para buscar:")
-    val busca = leitura.nextLine()
-    val endereco = "https://www.cheapshark.com/api/1.0/games?id=$busca"
+    val gamer = Gamer.criarGamer(leitura)
+    println("Cadastro concluído com sucesso. Dados do gamer:")
+    println(gamer)
+    println("Idade do gamer: " + gamer.dataNascimento?.transformarEmIdade())
 
-    val client: HttpClient = HttpClient.newHttpClient()
-    val request = HttpRequest.newBuilder()
-        .uri(URI.create(endereco))
-        .build()
-    val response = client
-        .send(request, BodyHandlers.ofString())
+    do {
+        println("Digite o código de jogo para buscar:")
+        val busca = leitura.nextLine()
 
-    val json = response.body()
-    //println(json)
+        val buscaApi = ConsumoApi()
+        val infomacaoJogo = buscaApi.buscaJogo(busca)
 
-    var meuJogo:Jogo? = null
+        var meuJogo: Jogo? = null
 
-    val resultado = runCatching {
-        val gson = Gson()
-        val meuInfoJogo = gson.fromJson(json, InfoJogo::class.java)
-        meuJogo = Jogo(
-            meuInfoJogo.info.title,
-            meuInfoJogo.info.thumb)
-    }
-
-    resultado.onFailure {
-        println("Jogo inexistente. Tente outro código.")
-    }
-
-    resultado.onSuccess {
-        println("Deseja inserir uma descrição? S/N")
-        val opcao = leitura.nextLine()
-        if (opcao.equals("s", true)) {
-            println("Insira a descrição para o jogo:")
-            val descricaoPersonalizada = leitura.nextLine()
-            meuJogo?.descricao = descricaoPersonalizada
-        } else {
-            meuJogo?.descricao = meuJogo?.titulo
+        val resultado = runCatching {
+            meuJogo = Jogo(
+                infomacaoJogo.info.title,
+                infomacaoJogo.info.thumb)
         }
 
-        println(meuJogo)
+        resultado.onFailure {
+            println("Jogo inexistente. Tente outro código.")
+        }
+
+        resultado.onSuccess {
+            println("Deseja inserir uma descrição? S/N")
+            val opcao = leitura.nextLine()
+            if (opcao.equals("s", true)) {
+                println("Insira a descrição para o jogo:")
+                val descricaoPersonalizada = leitura.nextLine()
+                meuJogo?.descricao = descricaoPersonalizada
+            } else {
+                meuJogo?.descricao = meuJogo?.titulo
+            }
+
+            gamer.jogosBuscados.add(meuJogo)
+        }
+
+            println("Deseja buscar um novo jogo? S/N")
+            val resposta = leitura.nextLine()
+
+    } while (resposta.equals("s", true))
+
+    println("Jogos buscados")
+    println(gamer.jogosBuscados)
+
+    println("\nJogos ordenados por título: ")
+    gamer.jogosBuscados.sortBy {
+        it?.titulo
     }
 
-    resultado.onSuccess {
-        println("Busca finalizada com sucesso.")
+    gamer.jogosBuscados.forEach{
+        println("Título: " + it?.titulo)
     }
+
+    val jogosFiltrados = gamer.jogosBuscados.filter {
+        it?.titulo?.contains("batman", true) ?: false
+    }
+    println("\nJogos filtrados pelo título:")
+    println(jogosFiltrados)
+
+    println("Deseja excluir algum jogo da lista original? S/N")
+    val opcao = leitura.nextLine()
+    if (opcao.equals("s", true)){
+        println(gamer.jogosBuscados)
+        println("\nInforme a posição do jogo que deseja excluir:")
+        val posicao = leitura.nextInt()
+        gamer.jogosBuscados.removeAt(posicao)
+    }
+
+    println("\nLista atualizada: ")
+    println(gamer.jogosBuscados)
+
+    println("Busca finalizada com sucesso.")
 }

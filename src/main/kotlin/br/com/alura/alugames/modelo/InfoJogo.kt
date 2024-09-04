@@ -1,6 +1,6 @@
-package org.example
+package org.example.br.com.alura.alugames.modelo
 
-data class InfoJogo(val info:InfoApiShark) {
+data class InfoJogo(val info: InfoApiShark) {
     override fun toString(): String {
         return info.toString()
     }
